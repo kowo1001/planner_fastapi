@@ -1,13 +1,32 @@
-from pydantic import BaseModel, EmailStr
 from typing import Optional, List
+from beanie import Document, Link
+from pydantic import BaseModel, EmailStr
 from models.events import Event
 
 # 사용자 모델 클래스 정의
-class User(BaseModel):
+
+class User(Document):
     email: EmailStr
     password: str
-    username: str
-    events: List[Event] | None = None
+    events: Optional[List[Event]]
+
+    class Settings:
+        name = "users"
+    class Config:
+        schema_extra = {
+            "examle": {
+                "email": "fastapi@packt.com",
+                "password": "string!!!",
+                "events": [],
+            }
+        }
+
+# class User(BaseModel):
+#     email: EmailStr
+#     password: str
+#     username: str
+#     events: Optional[List[Event]] = None
+    # 또는 List[Event] | None = None
 
 # 사용자 로그인 모델 클래스 정의
 class UserSignIn(BaseModel):

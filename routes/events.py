@@ -32,6 +32,7 @@ async def create_event(body: Event = Body(...)) -> dict:
         "message": "Event created successfully."
     }
 
+
 # 2. 데이터베이스에 있는 단일 이벤트 삭제
 @event_router.delete("/{id}")
 async def delete_event(id: int) -> dict:

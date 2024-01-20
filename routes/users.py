@@ -1,20 +1,38 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from auth.jwt_handler import create_access_token
+
 from models.users import User, UserSignIn
+from auth.hash_password import HashPassword
+from database.connection import Database
 
 user_router = APIRouter(
     tags=["User"],
 )
+
+user_database = Database(User)
+hash_password = HashPassword()
+
 users = {}
 
 # 사용자 등록 라우트 정의
 @user_router.post("/signup")
-async def sign_new_user(data: User) -> dict:
-    if data.email in users:
-        raise  HTTPException(
+async def sign_new_user(user: User) -> dict:
+    user_exist = await User.find_one(User.email == user.email)
+    if user_exist:
+        raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="User with supplied username exists"
+            detail="User with email provided exists already"
         )
-    users[data.email] = data
+    # if user.email in users:
+    #     raise  HTTPException(
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail="User with supplied username exists"
+    #     )
+
+    hashed_password = hash_password.create_hash(user.password)
+    user.password = hashed_password
+    await user_database.save(user)
     return {
         "message": "User successfully registered"
     }
@@ -22,20 +40,35 @@ async def sign_new_user(data: User) -> dict:
 # 로그인 라우트 정의
 @user_router.post("/signin")
 async def sign_user_in(user:UserSignIn) -> dict:
-    if user.email not in users:
+    user_exist = await User.find_one(User.email == user.email)
+    if not user_exist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User does not exist"
+            detail="USER with email does not exist"
         )
-    if users[user.email].password != user.password:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Wrong credentials passed"
-        )
+    if user_exist.password == user.password:
+        return {
+            "message": "User signed in successfully."
+        }
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid details passed"
+    )
 
-    return {
-        "message": "User signed in successfully."
-    }
+    # if user.email not in users:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_404_NOT_FOUND,
+    #         detail="User does not exist"
+    #     )
+    # if users[user.email].password != user.password:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Wrong credentials passed"
+    #     )
+    #
+    # return {
+    #     "message": "User signed in successfully."
+    # }
 
 
 
