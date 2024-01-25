@@ -39,8 +39,15 @@ async def sign_new_user(user: User) -> dict:
 
 # 로그인 라우트 정의
 @user_router.post("/signin")
-async def sign_user_in(user:UserSignIn) -> dict:
-    user_exist = await User.find_one(User.email == user.email)
+async def sign_user_in(user:OAuth2PasswordRequestForm = Depends()) -> dict:
+    user_exist = await User.find_one(User.email == user.username)
+    
+    if hash_password.verify_hash(user.password, user_exist.password):
+        access_token = create_access_token(user_exist.email)
+        return {
+            'access_token': access_token,
+            'token_type': "Bearer"
+        }
     if not user_exist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
