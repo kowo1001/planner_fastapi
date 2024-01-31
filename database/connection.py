@@ -27,6 +27,7 @@ class Database:
     async def update(self, id: PydanticObjectId, body: BaseModel) -> Any:
         doc_id = id
         des_body = body.dict()
+        # des_body = model_dump()
         des_body = {k:v for k,v in des_body.items() if v is not None}
         update_query = {"$set": {
             field: value for field, value in
@@ -50,6 +51,11 @@ class Settings(BaseSettings):
     DATABASE_NAME: Optional[str] = "mydatabase" # 데이터베이스 이름 추가
     SECRET_KEY: Optional[str] = None
 
+    async def init_db():
+        test_settings = Settings()
+        test_settings.DATABASE_URL = "mongodb://localhost:27017/testdb"
+
+        await test_settings.initialize_database()
 
     async def initialize_database(self):
         client = AsyncIOMotorClient(self.DATABASE_URL)

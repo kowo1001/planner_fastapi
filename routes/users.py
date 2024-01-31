@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from auth.jwt_handler import create_access_token
 
-from models.users import User, UserSignIn
+from models.users import User, TokenResponse
 from auth.hash_password import HashPassword
 from database.connection import Database
 
@@ -38,7 +38,7 @@ async def sign_new_user(user: User) -> dict:
     }
 
 # 로그인 라우트 정의
-@user_router.post("/signin")
+@user_router.post("/signin", response_model=TokenResponse)
 async def sign_user_in(user:OAuth2PasswordRequestForm = Depends()) -> dict:
     user_exist = await User.find_one(User.email == user.username)
     
