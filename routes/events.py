@@ -1,8 +1,8 @@
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import Depends, APIRouter, Body, HTTPException, status
 from database.connection import Database
 from auth.authenticate import authenticate
-from models.events import Event
+from models.events import Event, EventUpdate
 from typing import List
 
 event_database = Database(Event)
@@ -31,8 +31,9 @@ async def retrieve_event(id: int) -> Event:
 
 # 1. 이벤트 생성
 @event_router.post("/new")
-async def create_event(body: Event, user: str = Depends(authenticate())) -> dict:
-    events.append(body)
+async def create_event(body: Event, user: str = Depends(authenticate)) -> dict:
+    body.creator = user
+    await event_database.save(body)
     return {
         "message": "Event created successfully."
     }
@@ -56,17 +57,22 @@ async def update_event(id: PydanticObjectId, body: EventUpdate, user: str = Depe
 
 # 2. 데이터베이스에 있는 단일 이벤트 삭제
 @event_router.delete("/{id}")
-async def delete_event(id: PydanticObjectId, user: str = Depends(authenticate())) -> dict:
-    for event in events:
-        if event.id == id:
-            events.remove(event)
-            return {
-                "message": "Event deleted successfully."
-            }
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Event with supplied ID does not exist"
-    )
+async def delete_event(id: PydanticObjectId, user: str = Depends(authenticate)) -> dict:
+    event = await event_database.get(id)
+    if event.creator != user:
+        raise HTTPException(
+            status_code=status.HTTP_400_NOT_FOUND,
+            detail="Operation not allowed"
+        )
+    event = await event_database.delete(id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event with supplied ID does not exist"
+        )
+    return {
+        "message": "Event deleted successfully."
+    }
 
 # 3. 전체 이벤트 삭제
 @event_router.delete("/")

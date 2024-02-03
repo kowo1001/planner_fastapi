@@ -13,12 +13,12 @@ user_router = APIRouter(
 user_database = Database(User)
 hash_password = HashPassword()
 
-users = {}
 
 # 사용자 등록 라우트 정의
 @user_router.post("/signup")
 async def sign_new_user(user: User) -> dict:
     user_exist = await User.find_one(User.email == user.email)
+
     if user_exist:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
