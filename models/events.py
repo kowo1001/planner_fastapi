@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 class Event(Document):
-    id: int
+    creator: Optional[str]
     title: str
     image: str
     description: str
@@ -21,6 +21,8 @@ class Event(Document):
                 "location": "Google Meet"
             }
         }
+    class Settings:
+        name = "events"
 
 class EventUpdate(BaseModel):
     title: Optional[str]
@@ -40,7 +42,6 @@ class EventUpdate(BaseModel):
                 "location": "Google Meet"
             }
         }
-    class Settings:
-        name = "events"
+
 
 
